@@ -51,6 +51,10 @@ pipeline {
         stage('ECR Login') {
 
             steps {
+  withCredentials([
+                    [$class: 'AmazonWebServicesCredentialsBinding',
+                     credentialsId: 'jenkins-user']
+                ]) {
 
                 sh '''
                 aws ecr get-login-password \
@@ -61,12 +65,16 @@ pipeline {
                 $ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
                 '''
             }
+            }
         }
 
         stage('Push To ECR') {
 
             steps {
-
+  withCredentials([
+                    [$class: 'AmazonWebServicesCredentialsBinding',
+                     credentialsId: 'jenkins-user']
+                ]) {
                 sh '''
 
                 docker tag \
@@ -77,18 +85,28 @@ pipeline {
                 $ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO:$IMAGE_TAG
 
                 '''
+  }
             }
         }
 
         stage('Update Kubeconfig') {
                     steps {
+                          withCredentials([
+                    [$class: 'AmazonWebServicesCredentialsBinding',
+                     credentialsId: 'jenkins-user']
+                ]) {
                         sh "aws eks update-kubeconfig --region ${AWS_REGION} --name ${EKS_CLUSTER}"
+                    }
                     }
         }
 
 
         stage('Deploy to EKS') {
             steps {
+                  withCredentials([
+                    [$class: 'AmazonWebServicesCredentialsBinding',
+                     credentialsId: 'jenkins-user']
+                ]) {
                 script {
                     // If using Helm, replace with helm upgrade/install command
                     sh """
@@ -97,6 +115,7 @@ pipeline {
                     kubectl rollout status deployment/order-history-deployment -n ${NAMESPACE}
                     """
                 }
+                  }
             }
         }
     }
