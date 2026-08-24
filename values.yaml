@@ -4,8 +4,9 @@ image:
   repository: 230476794540.dkr.ecr.us-east-1.amazonaws.com/meracommerce/order-history-service
   pullPolicy: IfNotPresent
   tag: "latest"
-
-imagePullSecrets: []
+imagePullSecrets:
+  - name: ecr-registry-secret
+  
 nameOverride: ""
 fullnameOverride: "order-history-service"
 
