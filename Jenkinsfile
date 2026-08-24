@@ -22,7 +22,7 @@ pipeline {
 
             steps {
 
-                git branch: 'main',
+                git branch: 'master',
                 url: 'https://github.com/prabalpratap191/order-history-service.git'
 
             }
