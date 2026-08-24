@@ -33,6 +33,8 @@ pipeline {
             steps {
 
                 sh 'mvn clean package -DskipTests'
+                sh 'cd ./target'
+                sh 'ls'
 
             }
         }
@@ -42,8 +44,10 @@ pipeline {
             steps {
                 script {
                     VERSION = "${env.BUILD_NUMBER}"
+                    sh "echo $VERSION"
                     sh "docker build -t ${IMAGE_NAME}:${VERSION} ."
                     sh "docker tag ${IMAGE_NAME}:${VERSION} ${IMAGE_NAME}:latest"
+                    sh "echo ${IMAGE_NAME}:${VERSION}"
                 }
             }
         }
