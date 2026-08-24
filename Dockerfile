@@ -9,10 +9,10 @@ COPY target/order-history-service-1.0.0.jar app.jar
 RUN chown -R appuser:appgroup /app
 USER appuser
 
-EXPOSE 8084
+EXPOSE 9095
 
 HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
-  CMD wget -qO- http://localhost:9094/actuator/health || exit 1
+  CMD wget -qO- http://localhost:9095/actuator/health || exit 1
 
 ENTRYPOINT ["java", \
   "-XX:+UseContainerSupport", \
