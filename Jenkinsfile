@@ -4,10 +4,15 @@ pipeline {
 
     environment {
 
-        AWS_REGION = 'us-east-1'
-        ECR_REPO = 'order-history-service'
-        ACCOUNT_ID = '123456789012'
 
+        AWS_REGION = 'us-east-1'
+        ACCOUNT_ID = '123456789012'
+        ECR_REGISTRY = '230476794540.dkr.ecr.us-east-1.amazonaws.com'
+        ECR_REPO = 'meracommerce/order-history-service'
+        IMAGE_NAME = "${ECR_REGISTRY}/${ECR_REPO}"
+        EKS_CLUSTER = 'meracommerce-dev'
+        NAMESPACE = 'order-history-ns' // Change as needed per service
+        // Optionally, set JAVA_HOME if needed for your build tool
         IMAGE_TAG = "1.0.${BUILD_NUMBER}"
     }
 
@@ -18,7 +23,7 @@ pipeline {
             steps {
 
                 git branch: 'main',
-                url: 'https://github.com/your-org/order-history-service.git'
+                url: 'https://github.com/prabalpratap191/order-history-service.git'
 
             }
         }
@@ -32,14 +37,14 @@ pipeline {
             }
         }
 
-        stage('Docker Build') {
+        stage('Docker Build & Tag') {
 
             steps {
-
-                sh '''
-                docker build \
-                -t $ECR_REPO:$IMAGE_TAG .
-                '''
+                script {
+                    VERSION = "${env.BUILD_NUMBER}"
+                    sh "docker build -t ${IMAGE_NAME}:${VERSION} ."
+                    sh "docker tag ${IMAGE_NAME}:${VERSION} ${IMAGE_NAME}:latest"
+                }
             }
         }
 
@@ -75,31 +80,34 @@ pipeline {
             }
         }
 
-        stage('Deploy EC2') {
+        stage('Update Kubeconfig') {
+                    steps {
+                        sh "aws eks update-kubeconfig --region ${AWS_REGION} --name ${EKS_CLUSTER}"
+                    }
+        }
 
+
+        stage('Deploy to EKS') {
             steps {
-
-                sshagent(['ec2-ssh-key']) {
-
-                    sh '''
-                    ssh -o StrictHostKeyChecking=no ec2-user@10.0.1.100 << EOF
-
-                    docker pull \
-                    $ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO:$IMAGE_TAG
-
-                    docker stop order-history-service || true
-
-                    docker rm order-history-service || true
-
-                    docker run -d \
-                    --name order-history-service \
-                    -p 9095:9095 \
-                    $ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO:$IMAGE_TAG
-
-                    EOF
-                    '''
+                script {
+                    // If using Helm, replace with helm upgrade/install command
+                    sh """
+                    kubectl set image deployment/order-history-deployment order-history-container=${IMAGE_NAME}:${VERSION} -n ${NAMESPACE} || \
+                    kubectl create deployment order-history-deployment --image=${IMAGE_NAME}:${VERSION} -n ${NAMESPACE}
+                    kubectl rollout status deployment/order-history-deployment -n ${NAMESPACE}
+                    """
                 }
             }
         }
     }
+    
+    post {
+        failure {
+            echo 'Pipeline failed. Please check the logs.'
+        }
+        success {
+            echo 'Deployment successful!'
+        }
+    }
+
 }
