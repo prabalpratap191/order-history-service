@@ -1,5 +1,1 @@
-sh 'git config user.email "prabalpratap191@gmail.com"'
-sh 'git config user.name "prabalpratap191"'
-sh 'git add version.txt'
-sh 'git commit -m "Bump version to ${newVersion}" || true'
-sh 'git push origin HEAD:master || true'
+1.0.1
