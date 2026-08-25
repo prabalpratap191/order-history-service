@@ -20,6 +20,19 @@ pipeline {
             }
         }
 
+        stage('Set Version') {
+            steps {
+                script {
+                    def version = readFile('version.txt').trim()
+                    def (major, minor, patch) = version.tokenize('.')
+                    patch = (patch as int) + 1
+                    def newVersion = "${major}.${minor}.${patch}"
+                    writeFile file: 'version.txt', text: newVersion
+                    sh "mvn versions:set -DnewVersion=${newVersion}"
+                }
+            }
+        }
+
         stage('Maven Build') {
             steps {
                 sh 'mvn clean package -DskipTests'
