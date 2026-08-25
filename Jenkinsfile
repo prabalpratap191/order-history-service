@@ -78,6 +78,14 @@ stage('Set Version') {
                     [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'jenkins-user']
                 ]) {
                     sh "docker push ${env.ECR_REGISTRY}/${env.ECR_REPO}:${env.IMAGE_TAG}"
+                     sh '''
+                        aws ecr get-login-password \
+                        --region $AWS_REGION \
+                        | docker login \
+                        --username AWS \
+                        --password-stdin \
+                        $ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+                    '''
                     sh "docker push ${env.ECR_REGISTRY}/${env.ECR_REPO}:latest"
                 }
             }
