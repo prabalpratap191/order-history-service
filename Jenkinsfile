@@ -40,20 +40,24 @@ pipeline {
         }
 
         stage('Docker Build & Tag') {
-
-            steps {
-                script {
-                    VERSION = "${env.BUILD_NUMBER}"
-                    sh "echo $VERSION"
-                    sh "docker build -t ${IMAGE_NAME}:${VERSION} ."
-                    sh "docker tag ${IMAGE_NAME}:${VERSION} ${IMAGE_NAME}:latest"
-                    sh "echo ${IMAGE_NAME}:${VERSION}"
-                }
-            }
+    steps {
+        script {
+               steps {
+  withCredentials([
+                    [$class: 'AmazonWebServicesCredentialsBinding',
+                     credentialsId: 'jenkins-user']
+                ]) {
+            def imageTag = "${env.BUILD_NUMBER}"
+            sh "docker build -t 230476794540.dkr.ecr.us-east-1.amazonaws.com/meracommerce/order-history-service:${imageTag} ."
+            sh "docker tag 230476794540.dkr.ecr.us-east-1.amazonaws.com/meracommerce/order-history-service:${imageTag} 230476794540.dkr.ecr.us-east-1.amazonaws.com/meracommerce/order-history-service:latest"
         }
+               }        
+    }
+}
+        
+    
 
         stage('ECR Login') {
-
             steps {
   withCredentials([
                     [$class: 'AmazonWebServicesCredentialsBinding',
@@ -72,37 +76,15 @@ pipeline {
             }
         }
 
-        stage('Push To ECR') {
-
+            stage('Push To ECR') {
             steps {
-  withCredentials([
-                    [$class: 'AmazonWebServicesCredentialsBinding',
-                     credentialsId: 'jenkins-user']
-                ]) {
-                sh '''
-
-                docker tag \
-                $ECR_REPO:$IMAGE_TAG \
-                $ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO:$IMAGE_TAG
-
-               
-                docker tag \
-                 $ECR_REPO:$IMAGE_TAG \
-                $ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO:latest
-
-    
-
-                docker push \
-                $ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO:$IMAGE_TAG
-                
-                docker push \
-                $ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO:latest
-
-                '''
-  }
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'jenkins-user']]) {
+                    sh "docker push 230476794540.dkr.ecr.us-east-1.amazonaws.com/meracommerce/order-history-service:${env.BUILD_NUMBER}"
+                    sh "docker push 230476794540.dkr.ecr.us-east-1.amazonaws.com/meracommerce/order-history-service:latest"
+                }
             }
         }
-
+            
         stage('Update Kubeconfig') {
                     steps {
                           withCredentials([
