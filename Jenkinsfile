@@ -6,15 +6,14 @@ pipeline {
         ACCOUNT_ID = '123456789012'
         ECR_REGISTRY = '230476794540.dkr.ecr.us-east-1.amazonaws.com'
         ECR_REPO = 'meracommerce/order-history-service'
-        IMAGE_NAME = "${ECR_REGISTRY}/${ECR_REPO}"
         EKS_CLUSTER = 'meracommerce-dev'
-        NAMESPACE = 'order-history-ns' // Change as needed per service
-        IMAGE_TAG = "1.0.${BUILD_NUMBER}"
+        NAMESPACE = 'order-history-ns'
     }
 
     stages {
         stage('Checkout') {
             steps {
+                // Public repo: no credentials needed for clone
                 git branch: 'master',
                     url: 'https://github.com/prabalpratap191/order-history-service.git'
             }
@@ -28,7 +27,20 @@ pipeline {
                     patch = (patch as int) + 1
                     def newVersion = "${major}.${minor}.${patch}"
                     writeFile file: 'version.txt', text: newVersion
+
+                    // If you want to push version.txt back to GitHub, add a GitHub PAT credential in Jenkins (e.g., id: 'github-token')
+                    withCredentials([string(credentialsId: 'github-token', variable: 'Github_Pull_token')]) {
+                        sh "git config user.email 'prabalpratap191@gmail.com'"
+                        sh "git config user.name 'prabalpratap191'"
+                        sh 'git add version.txt'
+                        sh "git commit -m 'Bump version to ${newVersion} [ci skip]' || echo 'No changes to commit'"
+                        // Use token for push
+                        sh 'git remote set-url origin https://${Github_Pull_token}@github.com/prabalpratap191/order-history-service.git'
+                        sh "git push origin HEAD:master || echo 'No changes to push'"
+                    }
+
                     sh "mvn versions:set -DnewVersion=${newVersion}"
+                    env.IMAGE_TAG = newVersion
                 }
             }
         }
@@ -47,7 +59,7 @@ pipeline {
                     [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'jenkins-user']
                 ]) {
                     script {
-                        def imageTag = "${env.BUILD_NUMBER}"
+                        def imageTag = env.IMAGE_TAG
                         sh "docker build -t ${env.ECR_REGISTRY}/${env.ECR_REPO}:${imageTag} ."
                         sh "docker tag ${env.ECR_REGISTRY}/${env.ECR_REPO}:${imageTag} ${env.ECR_REGISTRY}/${env.ECR_REPO}:latest"
                     }
@@ -77,7 +89,7 @@ pipeline {
                 withCredentials([
                     [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'jenkins-user']
                 ]) {
-                    sh "docker push ${env.ECR_REGISTRY}/${env.ECR_REPO}:${env.BUILD_NUMBER}"
+                    sh "docker push ${env.ECR_REGISTRY}/${env.ECR_REPO}:${env.IMAGE_TAG}"
                     sh "docker push ${env.ECR_REGISTRY}/${env.ECR_REPO}:latest"
                 }
             }
@@ -99,10 +111,11 @@ pipeline {
                     [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'jenkins-user']
                 ]) {
                     script {
+                        def imageName = "${env.ECR_REGISTRY}/${env.ECR_REPO}:${env.IMAGE_TAG}"
                         sh """
-                            kubectl set image deployment/order-history-deployment order-history-container=${IMAGE_NAME}:${IMAGE_TAG} -n ${NAMESPACE} || \
-                            kubectl create deployment order-history-deployment --image=${IMAGE_NAME}:${IMAGE_TAG} -n ${NAMESPACE}
-                            kubectl rollout status deployment/order-history-deployment -n ${NAMESPACE}
+                            kubectl set image deployment/order-history-deployment order-history-container=${imageName} -n ${env.NAMESPACE} || \
+                            kubectl create deployment order-history-deployment --image=${imageName} -n ${env.NAMESPACE}
+                            kubectl rollout status deployment/order-history-deployment -n ${env.NAMESPACE}
                         """
                     }
                 }
