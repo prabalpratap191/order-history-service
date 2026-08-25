@@ -48,8 +48,8 @@ stage('Set Version') {
                 ]) {
                     script {
                         def imageTag = env.IMAGE_TAG
-                        sh "docker build -t ${env.ECR_REGISTRY}/${env.ECR_REPO}:${imageTag} ."
-                        sh "docker tag ${env.ECR_REGISTRY}/${env.ECR_REPO}:${imageTag} ${env.ECR_REGISTRY}/${env.ECR_REPO}:latest"
+                        sh "docker build -t ${ECR_REPO}:${imageTag} ."
+                        sh "docker tag ${ECR_REPO}:${imageTag} ${ECR_REGISTRY}/${ECR_REPO}:latest"
                     }
                 }
             }
@@ -73,7 +73,8 @@ stage('Set Version') {
                     [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'jenkins-user']
                 ]) {
                     sh "docker push ${ECR_REGISTRY}/${ECR_REPO}:${IMAGE_TAG}"
-                     sh "aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 230476794540.dkr.ecr.us-east-1.amazonaws.com"
+                    sh "echo 'Login again to push latest'"
+                    sh "aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 230476794540.dkr.ecr.us-east-1.amazonaws.com"
                     sh "docker push ${ECR_REGISTRY}/${ECR_REPO}:latest"
                 }
             }
