@@ -57,7 +57,7 @@ stage('Set Version') {
         stage('Docker Build & Tag') {
             steps {
                 withCredentials([
-                    [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'jenkins-user']
+                    [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-prod-cred']
                 ]) {
                     script {
                         def imageTag = env.IMAGE_TAG
@@ -71,7 +71,7 @@ stage('Set Version') {
         stage('ECR Login') {
             steps {
                 withCredentials([
-                    [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'jenkins-user']
+                    [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-prod-cred']
                 ]) {
                     sh '''
                         aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 230476794540.dkr.ecr.us-east-1.amazonaws.com
@@ -83,7 +83,7 @@ stage('Set Version') {
         stage('Push To ECR') {
             steps {
                 withCredentials([
-                    [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'jenkins-user']
+                    [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-prod-cred']
                 ]) {
                     sh "docker push ${ECR_REGISTRY}/${ECR_REPO}:${IMAGE_TAG}"
                     sh "echo 'Login again to push latest'"
@@ -96,7 +96,7 @@ stage('Set Version') {
         stage('Update Kubeconfig') {
             steps {
                 withCredentials([
-                    [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'jenkins-user']
+                    [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-prod-cred']
                 ]) {
                     sh "aws eks update-kubeconfig --region ${env.AWS_REGION} --name ${env.EKS_CLUSTER}"
                 }
@@ -106,7 +106,7 @@ stage('Set Version') {
         stage('Deploy to EKS') {
             steps {
                 withCredentials([
-                    [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'jenkins-user']
+                    [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-prod-cred']
                 ]) {
                     script {
                         def imageName = "${env.ECR_REGISTRY}/${env.ECR_REPO}:${env.IMAGE_TAG}"
