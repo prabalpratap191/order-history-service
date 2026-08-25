@@ -21,24 +21,13 @@ pipeline {
 stage('Set Version') {
     steps {
         script {
-                               def version = readFile('version.txt').trim()
+                    def version = readFile('version.txt').trim()
                     def (major, minor, patch) = version.tokenize('.')
-                    patch = (patch as int) + 1
+                    patch = (patch as int) + 2
                     def newVersion = "${major}.${minor}.${patch}"
                     writeFile file: 'version.txt', text: newVersion
 
-                    // Ensure workspace is up-to-date before commit/push
-                    withCredentials([string(credentialsId: 'Github_Pull_token', variable: 'Github_Pull_token')]) {
-                        sh "git config user.email 'prabalpratap191@gmail.com'"
-                        sh "git config user.name 'prabalpratap191'"
-                        sh 'git fetch origin'
-                        sh 'git checkout master' 
-                        sh 'git pull origin master' 
-                        sh 'git add version.txt'
-                        sh "git commit -m 'Bump version to {newVersion} [ci skip]' || echo 'No changes to commit'"
-                        sh 'git remote set-url origin https://$Github_Pull_token}@github.com/prabalpratap191/order-history-service.git'
-                        sh "git push origin HEAD:master || echo 'No changes to push'" 
-                    }
+                  
 
                     sh "mvn versions:set -DnewVersion=${newVersion}"
                     env.IMAGE_TAG = newVersion
