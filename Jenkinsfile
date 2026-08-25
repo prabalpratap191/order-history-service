@@ -51,6 +51,7 @@ stage('Set Version') {
                     script {
                         def imageTag = env.IMAGE_TAG
                         sh "docker build -t ${ECR_REPO}:${imageTag} ."
+                        sh "docker tag ${ECR_REPO}:${imageTag} ${ECR_REGISTRY}/${ECR_REPO}:${imageTag}"
                         sh "docker tag ${ECR_REPO}:${imageTag} ${ECR_REGISTRY}/${ECR_REPO}:latest"
                     }
                 }
