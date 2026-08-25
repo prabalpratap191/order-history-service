@@ -32,7 +32,7 @@ pipeline {
 
             steps {
 
-                sh 'mvn clean package -DskipTests'
+                sh 'sh "mvn clean package -DskipTests -Denv.BUILD_NUMBER=${env.BUILD_NUMBER}"'
                 sh 'cd ./target'
                 sh 'ls'
 
