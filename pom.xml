@@ -84,6 +84,8 @@
     </dependencies>
 
     <build>
+             <finalName>order-history-service-${env.BUILD_NUMBER}</finalName>
+  
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
