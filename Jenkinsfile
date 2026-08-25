@@ -29,7 +29,7 @@ pipeline {
                     writeFile file: 'version.txt', text: newVersion
 
                     // If you want to push version.txt back to GitHub, add a GitHub PAT credential in Jenkins (e.g., id: 'github-token')
-                    withCredentials([string(credentialsId: 'github-token', variable: 'Github_Pull_token')]) {
+                    withCredentials([string(credentialsId: 'Github_Pull_token', variable: 'Github_Pull_token')]) {
                         sh "git config user.email 'prabalpratap191@gmail.com'"
                         sh "git config user.name 'prabalpratap191'"
                         sh 'git add version.txt'
