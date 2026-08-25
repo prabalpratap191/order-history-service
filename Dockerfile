@@ -4,7 +4,7 @@ RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
 WORKDIR /app
 
-COPY target/order-history-service-1.0.0.jar app.jar
+COPY target/order-history-service-*.jar /app/order-history-service.jar
 
 RUN chown -R appuser:appgroup /app
 USER appuser
@@ -18,4 +18,4 @@ ENTRYPOINT ["java", \
   "-XX:+UseContainerSupport", \
   "-XX:MaxRAMPercentage=75.0", \
   "-Djava.security.egd=file:/dev/./urandom", \
-  "-jar", "app.jar"]
+  "-jar", "order-history-service.jar"]
