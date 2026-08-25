@@ -3,7 +3,6 @@ pipeline {
 
     environment {
         AWS_REGION = 'us-east-1'
-        ACCOUNT_ID = '123456789012'
         ECR_REGISTRY = '230476794540.dkr.ecr.us-east-1.amazonaws.com'
         ECR_REPO = 'meracommerce/order-history-service'
         EKS_CLUSTER = 'meracommerce-dev'
@@ -22,13 +21,27 @@ pipeline {
 stage('Set Version') {
     steps {
         script {
-            def version = readFile('version.txt').trim()
-            def (major, minor, patch) = version.tokenize('.')
-            patch = (patch as int) + 1
-            def newVersion = "${major}.${minor}.${patch}"
-            writeFile file: 'version.txt', text: newVersion
-            sh "mvn versions:set -DnewVersion=${newVersion}"
-            env.IMAGE_TAG = newVersion
+                               def version = readFile('version.txt').trim()
+                    def (major, minor, patch) = version.tokenize('.')
+                    patch = (patch as int) + 1
+                    def newVersion = "${major}.${minor}.${patch}"
+                    writeFile file: 'version.txt', text: newVersion
+
+                    // Ensure workspace is up-to-date before commit/push
+                    withCredentials([string(credentialsId: 'Github_Pull_token', variable: 'Github_Pull_token')]) {
+                        sh "git config user.email 'prabalpratap191@gmail.com'"
+                        sh "git config user.name 'prabalpratap191'"
+                        sh 'git fetch origin'
+                        sh 'git checkout master' 
+                        sh 'git pull origin master' 
+                        sh 'git add version.txt'
+                        sh "git commit -m 'Bump version to {newVersion} [ci skip]' || echo 'No changes to commit'"
+                        sh 'git remote set-url origin https://$Github_Pull_token}@github.com/prabalpratap191/order-history-service.git'
+                        sh "git push origin HEAD:master || echo 'No changes to push'" 
+                    }
+
+                    sh "mvn versions:set -DnewVersion=${newVersion}"
+                    env.IMAGE_TAG = newVersion
         }
     }
 }
@@ -115,5 +128,12 @@ stage('Set Version') {
         success {
             echo 'Deployment successful!'
         }
+     always {
+        // Example: Remove AWS keys from logs (if accidentally printed)
+        sh '''
+        sed -i -E "s/AKIA[0-9A-Z]{16}/[MASKED_AWS_ACCESS_KEY_ID]/g" $WORKSPACE/jenkins.log || true
+        sed -i -E "s/([A-Za-z0-9/+=]{40})/[MASKED_AWS_SECRET_ACCESS_KEY]/g" $WORKSPACE/jenkins.log || true
+        '''
+    }
     }
 }
