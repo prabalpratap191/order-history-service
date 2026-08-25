@@ -61,7 +61,7 @@ stage('Set Version') {
                     [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'jenkins-user']
                 ]) {
                     sh '''
-                        aws ecr get-login-password  --region $AWS_REGION   | docker login   --username AWS  --password-stdin  $ECR_REGISTRY.dkr.ecr.$AWS_REGION.amazonaws.com
+                        aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 230476794540.dkr.ecr.us-east-1.amazonaws.com
                     '''
                 }
             }
@@ -72,9 +72,9 @@ stage('Set Version') {
                 withCredentials([
                     [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'jenkins-user']
                 ]) {
-                    sh "docker push ${env.ECR_REGISTRY}/${env.ECR_REPO}:${env.IMAGE_TAG}"
-                     sh "aws ecr get-login-password  --region $AWS_REGION   | docker login   --username AWS  --password-stdin  $ECR_REGISTRY.dkr.ecr.$AWS_REGION.amazonaws.com"
-                    sh "docker push ${env.ECR_REGISTRY}/${env.ECR_REPO}:latest"
+                    sh "docker push ${ECR_REGISTRY}/${ECR_REPO}:${IMAGE_TAG}"
+                     sh "aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 230476794540.dkr.ecr.us-east-1.amazonaws.com"
+                    sh "docker push ${ECR_REGISTRY}/${ECR_REPO}:latest"
                 }
             }
         }
